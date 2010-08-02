@@ -6,15 +6,13 @@
 
 (deform test-dataform (test)
   (s1)
-  (lambda (dataform)
-    (with-slots (s1) dataform
-      (make-instance 'test :s1 s1))))
+  (lambda (&key s1)
+    (make-instance 'test :s1 s1)))
 
 (deform test-dataform2 (test-dataform)
   (s2)
-  (lambda (dataform)
-    (with-slots (s1 s2) dataform
-      (make-instance 'test :s1 s1 :s2 s2))))
+  (lambda (&key s1 s2)
+    (make-instance 'test :s1 s1 :s2 s2)))
 
 (defgrid my-gridedit ()
   ((:label "Колонка1" :slot-name s1))
@@ -22,6 +20,7 @@
 
 (defgrid my-gridedit2 (my-gridedit)
   ((:label "Колонка2" :slot-name s2))
+  :data-list (list (make-instance 'test :s1 1 :s2 2))
   :dataform-class test-dataform2)
 
 ;; 1. Дополнить логику добавления объекта к хранилищу которое показывает таблица

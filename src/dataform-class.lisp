@@ -259,12 +259,18 @@ second argument."
     (restart-case (apply-value dataform field)
       (skip-field () nil))))
 
+(defun params-list (dataform)
+  (loop for field in (view-fields (dataform-form-view dataform))
+     for slot-name = (slot-definition-name field)
+     when (slot-boundp dataform slot-name)
+     append `(,(intern (string slot-name) :keyword) ,(slot-value dataform slot-name))))
+
 (defun create-object (dataform)
-  (let ((object (funcall (constructor-fn (class-of dataform)) dataform)))
+  (let ((object (apply (constructor-fn (class-of dataform)) (params-list dataform))))
     (setf (dataform-data dataform) object)
     (persist-object (dataform-class-store dataform) object)))
 
-(defun update-object (obj dataform)
+(defmethod update-object ((obj standard-object) dataform)
   (loop for field in (view-fields (dataform-form-view dataform))
      for slot-name = (slot-definition-name field)
      do (if (slot-boundp dataform slot-name)
