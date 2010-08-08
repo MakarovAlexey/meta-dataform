@@ -4,6 +4,10 @@
 
 (defclass my-table-view (table-view) ())
 
+(defclass my-table-view-field (table-view-field) ())
+
+;;(defmethod initialize-instance :after ((instance my-table-view-field) &key 
+
 (defclass gridedit-class (widget-class my-table-view)
   ((item-dataform-class :initarg :dataform-class
 			:accessor item-dataform-class-of
@@ -99,7 +103,10 @@
 
 (defmacro defgrid (name direct-superclasses direct-columns &key data-list dataform-class &allow-other-keys)
   `(let* ((columns (mapcar (lambda (column-definition-args)
-			     (apply #'make-instance 'table-view-field column-definition-args))
+			     (apply #'make-instance 'my-table-view-field (mapcar (lambda (el)
+										   (if (symbolp el) el
+										       (eval el)))
+										 column-definition-args)))
 			   (quote ,direct-columns)))
 	  (data-store (make-private-store ,data-list))
 	  (class-name (quote ,name))

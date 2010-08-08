@@ -29,8 +29,13 @@
   `(let ((class-name (quote ,name))
 	 (slots-initargs (mapcar (lambda (slot-initargs)
 				   (etypecase slot-initargs
-				     (symbol (list :name slot-initargs))
-				     (list (list* :name slot-initargs))))
+				     (symbol
+				      (list :name slot-initargs))
+				     (list
+				      (list* :name (mapcar (lambda (el)
+							     (if (symbolp el) el
+								 (eval el)))
+							   slot-initargs)))))
 				 (quote ,direct-slots))))
      (setf (find-class class-name)
 	   (make-instance 'dataform-class :name class-name
@@ -96,21 +101,20 @@
   (declare (ignore initargs))
   (find-class 'direct-form-field-definition))
 
+(defmethod initialize-instance :after ((instance direct-form-field-definition) &key name &allow-other-keys)
+  (setf (view-field-slot-name instance) name))
+
 (defun compute-standard-effective-slot-definition-initargs (class direct-slot-definitions)
   #+sbcl(sb-pcl::compute-effective-slot-definition-initargs class direct-slot-definitions)
   #-sbcl(not-yet-implemented))
 
 (defun compute-form-view-field-initargs (direct-slot-definition)
-  (list :hidep (view-field-hide-p direct-slot-definition)
-	:label (view-field-label direct-slot-definition)
-	:parse-as (form-view-field-parser direct-slot-definition)
-	:prefix-fn (view-field-prefix-fn direct-slot-definition)
-;;	:reader (view-field-reader direct-slot-definition)
-	:requiredp (form-view-field-required-p direct-slot-definition)
-	:slot-name (slot-definition-name direct-slot-definition)
-	:suffix-fn (view-field-suffix-fn direct-slot-definition)
-;;	:writer (form-view-field-writer direct-slot-definition)))
-))
+  (loop for slot in (class-slots (class-of direct-slot-definition))
+     for initarg = (first (slot-definition-initargs slot))
+     for slot-name = (slot-definition-name slot)
+     when (not (null (and initarg (slot-boundp direct-slot-definition slot-name)
+			  (not (null (slot-value direct-slot-definition slot-name))))))
+     append `(,initarg ,(slot-value direct-slot-definition slot-name))))
 
 (defmethod compute-effective-slot-definition ((dataform dataform-class) slot-name direct-slot-definitions)
   :documentation "Необходимо доинициализировать метаобъект слота, поля переопределяются полностью и берется последнее опредление слота"
@@ -165,8 +169,8 @@
 			(safe-apply (view-field-prefix-fn field) view field obj args)
 			(apply #'render-view-field
 			       field view widget (view-field-presentation field)
-			       (when (not (null obj))
-				 (obtain-view-field-value field obj))  ;;у объекта - nil слотов нет, поэтому пропускаем
+			       (when (not (null obj)) ;; when obj is nil we must skip obtaining value (the values of nil object is nil)
+				 (obtain-view-field-value field obj))
 			       obj
 			       :field-info field-info
 			       args)
@@ -270,12 +274,21 @@ second argument."
     (setf (dataform-data dataform) object)
     (persist-object (dataform-class-store dataform) object)))
 
-(defmethod update-object ((obj standard-object) dataform)
+;;if writer slot of field is unbound, (form-view-field-writer field) throws exception
+(defmethod write-field-value (field obj dataform)
+  (funcall (form-view-field-writer field) obj (slot-value dataform (view-field-slot-name field))))
+
+(defmethod write-field-value (field (obj standard-object) dataform)
+  (if (slot-boundp field 'weblocks::writer) (call-next-method)
+      (let ((slot-name (view-field-slot-name field)))
+	(setf (slot-value obj slot-name) (slot-value dataform slot-name)))))
+
+(defmethod update-object (obj dataform)
   (loop for field in (view-fields (dataform-form-view dataform))
      for slot-name = (slot-definition-name field)
-     do (if (slot-boundp dataform slot-name)
-	    (setf (slot-value obj slot-name) (slot-value dataform slot-name))
-	    (slot-makunbound obj slot-name))))
+     if (slot-boundp dataform slot-name)
+     do (write-field-value field obj dataform)
+     else do (slot-makunbound obj slot-name)))
 
 (defmethod dataform-submit-action ((dataform standard-dataform) obj &rest args)
   (declare (ignore args))
