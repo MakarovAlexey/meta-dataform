@@ -21,18 +21,18 @@
   #'make-test)
 
 (defgrid my-gridedit ()
-  ((:label "Колонка1" :slot-name s1))
+  ((s1 :label "Колонка1"))
   :dataform-class test-dataform)
 
 (defgrid my-gridedit2 (my-gridedit)
-  ((:label "Колонка2" :slot-name s2))
+  ((s2 :label "Колонка2"))
   :data-list (list (make-instance 'test :s1 1 :s2 2))
   :dataform-class test-dataform2)
 
 (deform list-dataform ()
   ((first :reader #'first
 	  :writer #'(lambda (list value)
-		       (setf (first list) value)))
+		      (setf (first list) value)))
    (second :reader #'second
 	   :writer #'(lambda (list value)
 		       (setf (second list) value))))
@@ -40,13 +40,12 @@
       (list first second)))
 
 (defgrid my-gridedit3 ()
-  ((:label "Колонка1"
-	   :reader #'(lambda (list)
-		       (first  list))
-	   :slot-name d2)
-   (:label "Колонка2" :reader #'(lambda (list)
-				  (second list))
-	   :slot-name d4))
+  ((d2 :label "Колонка1"
+       :reader #'(lambda (list)
+		   (first  list)))
+   (d4 :label "Колонка2"
+       :reader #'(lambda (list)
+		   (second list))))
   :data-list (list (list 222 333) (list 111 444))
   :dataform-class list-dataform)
 

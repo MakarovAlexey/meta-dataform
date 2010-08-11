@@ -101,12 +101,17 @@
   (setf (dataseq-view object) (class-of object))
   (call-next-method))
 
+(defmethod compute-view-field-initargs ((slot-name symbol))
+  (list :slot-name slot-name))
+
+(defmethod compute-view-field-initargs ((initargs list))
+  (mapcar (lambda (el)
+	    (if (symbolp el) el
+		(eval el))) initargs))
+
 (defmacro defgrid (name direct-superclasses direct-columns &key data-list dataform-class &allow-other-keys)
   `(let* ((columns (mapcar (lambda (column-definition-args)
-			     (apply #'make-instance 'my-table-view-field (mapcar (lambda (el)
-										   (if (symbolp el) el
-										       (eval el)))
-										 column-definition-args)))
+			     (apply #'make-instance 'my-table-view-field :slot-name (compute-view-field-initargs column-definition-args)))
 			   (quote ,direct-columns)))
 	  (data-store (make-private-store ,data-list))
 	  (class-name (quote ,name))
