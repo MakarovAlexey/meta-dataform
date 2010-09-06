@@ -11,10 +11,10 @@
 (defclass gridedit-class (widget-class my-table-view)
   ((item-dataform-class :initarg :dataform-class
 			:accessor item-dataform-class-of
-			:documentation "Хранит имя класса dataform, данный объект создается при выборе объекта в таблице")
+			:documentation "store the name of dataform class, dataform object instanctiate on row selection in grid")
    (direct-fields :initarg :direct-fields :initform nil
 		  :reader direct-fields))
-  (:documentation "Необходим для определения поведения"))
+  (:documentation "required for behaviour definition"))
 
 (defclass standard-gridedit (gridedit)
   ()
@@ -53,7 +53,7 @@
 (defun compute-view-field (&rest direct-fields)
   (first direct-fields))
 
-(defun compute-fields (direct-fields &rest direct-superclasses) ;;отрефакторить
+(defun compute-fields (direct-fields &rest direct-superclasses)
   (let* ((fields (make-hash-table)))
     (dolist (field (apply #'append
 			  direct-fields
@@ -75,7 +75,7 @@
     (apply #'compute-dataform-class direct-superclasses))
   (setf (view-fields class) (apply #'compute-fields direct-fields direct-superclasses)))
 
-;данный метод почему-то не срабатывает, вметсто него србабатывае мтеод класса dataseq
+;instead of this method call (initialize-instance :after ((obj dataseq ...)))
 ;(defmethod initialize-instance :after ((obj standard-gridedit) &key &allow-other-keys)
 ;  (declare (ignore initargs))
 ;  ;; Ensure data-class is specified

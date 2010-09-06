@@ -21,11 +21,11 @@
   #'make-test)
 
 (defgrid my-gridedit ()
-  ((s1 :label "Колонка1"))
+  ((s1 :label "Column1"))
   :dataform-class test-dataform)
 
 (defgrid my-gridedit2 (my-gridedit)
-  ((s2 :label "Колонка2"))
+  ((s2 :label "Column2"))
   :data-list (list (make-instance 'test :s1 1 :s2 2))
   :dataform-class test-dataform2)
 
@@ -40,17 +40,14 @@
       (list first second)))
 
 (defgrid my-gridedit3 ()
-  ((d2 :label "Колонка1"
+  ((d2 :label "Column1"
        :reader #'(lambda (list)
 		   (first  list)))
-   (d4 :label "Колонка2"
+   (d4 :label "Column2"
        :reader #'(lambda (list)
 		   (second list))))
   :data-list (list (list 222 333) (list 111 444))
   :dataform-class list-dataform)
-
-;; 1. Дополнить логику добавления объекта к хранилищу которое показывает таблица
-;; 2. ПОдумать насчет отвязывания класс аобъекта от gridedit, в сущности он там не нужен, он нужен только чтобы создавать объект, для всего остального имя класса обекта не имеет значения
 
 ;; Define callback function to initialize new sessions
 (defun init-user-session (root)

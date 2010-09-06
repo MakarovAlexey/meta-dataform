@@ -9,11 +9,11 @@
 
 (defmethod open-store ((store-type (eql :private)) &rest args)
   (declare (ignore store-type args))
-  (error "private-store является внутренним и непредназначен для исопльзования как *default-store*"))
+  (error "private-store is private for standard-gridedit, this store unappropriated for *default-store*"))
 
 (defmethod close-store ((store private-store))
   (declare (ignore store))
-  (error "private-store является внутренним и непредназначен для исопльзования как *default-store*"))
+  (error "private-store is private for standard-gridedit, this store unappropriated for *default-store*"))
 
 (defmethod delete-persistent-object ((store private-store) object)
   (let ((objects (objects-of store)))

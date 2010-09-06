@@ -1,7 +1,3 @@
-;;понадобиться переопределить dataform-submit-action
-;;допилить инициализацю объекта до совместимости с weblocks через (defmethod finalize-inheritace :after ((class dataform-class)) ...)
-;;update-object-view-from-request создать аналог
-
 (in-package meta-dataform)
 
 (export '(standard-dataform))
@@ -13,7 +9,7 @@
 ;;(defmethod print-view-field-value (value presentation field (view my-data-view) widget obj &rest args)
 ;;  (print-view-field-value value (make-instance 'text-presentation) field view widget obj args))
 
-(defclass dataform-class (widget-class my-form-view my-data-view) ;;т.о. слоты form-view становятся свойством класса
+(defclass dataform-class (widget-class my-form-view my-data-view)
   ((constructor-fn :initarg :constructor-fn :accessor constructor-fn))
   (:default-initargs
    ;:persistp nil
@@ -43,8 +39,6 @@
 			  :direct-slots slots-initargs
 			  :constructor-fn ,creation-fn))))
 
-;;и теперь можно определить поведение
-;; Следующие два метода определяют, что суперкласс метакласса "form-class", по умолчанию, будет класс "standard-form"
 (defmethod initialize-instance :around ((class dataform-class) &rest initargs &key direct-superclasses)
   (declare (dynamic-extent initargs))
   (if (loop for class in direct-superclasses
@@ -92,8 +86,7 @@
   (setf (dataform-form-view instance) (class-of instance)
 	(dataform-data-view instance) (class-of instance)))
 
-(defclass direct-form-field-definition (form-view-field data-view-field standard-direct-slot-definition) ()
-  (:documentation "Хранит то, что передается из defview в полях как :present-as и :parse-as"))
+(defclass direct-form-field-definition (form-view-field data-view-field standard-direct-slot-definition) ())
 
 (defclass effective-field-definition (form-view-field data-view-field standard-effective-slot-definition) ())
 
@@ -117,7 +110,6 @@
      append `(,initarg ,(slot-value direct-slot-definition slot-name))))
 
 (defmethod compute-effective-slot-definition ((dataform dataform-class) slot-name direct-slot-definitions)
-  :documentation "Необходимо доинициализировать метаобъект слота, поля переопределяются полностью и берется последнее опредление слота"
   (let ((dsd (first direct-slot-definitions)))
     (if (typep dsd 'direct-form-field-definition)
       (apply #'make-instance 'effective-field-definition
@@ -152,7 +144,6 @@
     (:data (apply #'render-view-field-value value (make-instance 'text-presentation) field view widget obj args))
     (:form (call-next-method))))
 
-;;Так как объект создается после отправки данных формы на сервер, изменим поведение следующх функций
 (defmethod render-widget-body ((obj standard-dataform) &rest args)
   (let ((data (if (or (slot-boundp obj 'data) (null (slot-value obj 'data)))
 		  (dataform-data obj)
@@ -178,8 +169,6 @@
 		    view obj args))
 	   args))
 
-;;Написать свое представление, которое дополнит effective-field-definition  !!!!!!!!!!!!!!
-
 ;render-view-field-value < null > < password-presentation  > < form-view-field  > < form-view  > < t > < t > 
 ;render-view-field-value < t > < dropdown-presentation > < form-view-field > < form-view > < t > < t > 
 ;render-view-field-value < t > < password-presentation > < form-view-field > < form-view > < t > < t > 
@@ -199,7 +188,6 @@
 
 ;(in-package :weblocks)
 
-;;; Пришлось слегка изменить поведение этой функции
 (defun find-view (view &optional (signal-error-p t))
   "Finds a view. If 'view' is a symbol, looks up the appropriate view
 object. If 'view' is a view object, simply returns it. Otherwise,
@@ -210,7 +198,7 @@ If 'view' is a list, finds a scaffold class by calling
 calling 'generate-scaffold-view' with the scaffold class name and the
 second argument."
   (if (or (typep view 'meta-dataform::dataform-class)
-	  (typep view 'meta-dataform::gridedit-class)) view ;; Если тип представления dataform-class или gridedit-class, то просто возвращаем объект
+	  (typep view 'meta-dataform::gridedit-class)) view
       (or (etypecase view
 	    (list (generate-scaffold-view (make-instance (scaffold-class-name (first view)))
 					  (find-class (second view))))
@@ -298,7 +286,7 @@ second argument."
 	     (invoke-restart 'skip-field)))
       (handler-bind (('value-not-parsed #'store-error)
 		     ('value-not-valid #'store-error))
-	(apply-values dataform)));; подумать над переделкой, вынести накопление ошибок в apply-values, создать новое улсовие "some-fields-have-errors" перехватывая в dataform-submit-action сдлеать возврат ошибок или t
+	(apply-values dataform)))
     (if (not (null errors))
 	(loop for e in errors appending
 	     `(,(field e) ,(error-msg e)))
